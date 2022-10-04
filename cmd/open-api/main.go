@@ -15,11 +15,13 @@ func main() {
 	config.Init()
 	r := gin.New()
 
-	log := logger.New()
-	r.Use(log.MiddlewareLogger())
-	r.Use(log.RecoveryWithZap())
+	logger := logger.New()
+	r.Use(logger.MiddlewareLogger())
+	r.Use(logger.RecoveryWithZap())
+
 	// Example ping request.
 	r.GET("/ping", func(c *gin.Context) {
+		c.Writer.Header().Add("X-Request-Id", "1234-5678-9012")
 		c.String(200, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
@@ -28,6 +30,7 @@ func main() {
 		panic("An unexpected error happen!")
 	})
 
+	// Example router group
 	healthcheck.SetHealthCheckRoute(r)
 
 	server := httpserver.NewGinServer(

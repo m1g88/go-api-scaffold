@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"time"
 
@@ -32,6 +33,9 @@ func (l *logger) MiddlewareLogger() gin.HandlerFunc {
 		TimeFormat: time.RFC3339,
 		Context: ginzap.Fn(func(c *gin.Context) []zapcore.Field {
 			fields := []zapcore.Field{}
+			blw := &BodyLogWriter{Body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+			c.Writer = blw
+
 			// log request ID
 			if requestID := c.Writer.Header().Get("X-Request-Id"); requestID != "" {
 				fields = append(fields, zap.String("request_id", requestID))
@@ -54,4 +58,14 @@ func (l *logger) MiddlewareLogger() gin.HandlerFunc {
 			return fields
 		}),
 	})
+}
+
+type BodyLogWriter struct {
+	gin.ResponseWriter
+	Body *bytes.Buffer
+}
+
+func (w BodyLogWriter) Write(b []byte) (int, error) {
+	fmt.Println("###", string(b))
+	return io.MultiWriter(w.Body, w.ResponseWriter).Write(b)
 }
